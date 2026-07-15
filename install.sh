@@ -21,16 +21,18 @@ echo "📦 正在检查并安装基础系统依赖..."
 apt update -y
 apt install -y git python3 python3-pip python3.11-venv
 
-# 2. 拉取/更新代码仓库
-if [ -d "$INSTALL_DIR" ]; then
-    echo "🔄 检测到项目已存在，正在拉取最新代码..."
-    cd "$INSTALL_DIR"
-    git fetch --all
-    git reset --hard origin/main || git reset --hard origin/master
+# 2. 克隆项目代码
+echo "📥 正在克隆项目代码..."
+# 先克隆到临时目录，再强行覆盖过来，完美解决“目录非空”无法克隆的问题
+git clone --depth=1 "$GIT_URL" /tmp/payplus_temp
+if [ $? -eq 0 ]; then
+    cp -r /tmp/payplus_temp/* "$INSTALL_DIR/" 2>/dev/null || true
+    cp -r /tmp/payplus_temp/.* "$INSTALL_DIR/" 2>/dev/null || true
+    rm -rf /tmp/payplus_temp
+    echo "✅ 代码克隆成功！"
 else
-    echo "📥 正在克隆项目代码到: $INSTALL_DIR ..."
-    git clone "$GIT_URL" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+    echo "❌ 错误: Git 克隆失败，请检查服务器与 GitHub 的网络连接！"
+    exit 1
 fi
 
 # 3. 创建虚拟环境
