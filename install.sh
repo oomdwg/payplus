@@ -49,9 +49,11 @@ source "$VENV_DIR"/bin/activate
 # 5. 写入一键启动脚本 (方便后续手动管理)
 cat > run.sh << 'EOF'
 #!/bin/bash
-cd /usr/local/my-flask-app/backend
-source venv/bin/activate
-# ⚠️ 注意：下面的 app:app 请根据你的实际启动文件名修改（例如 main:app）
+# 1. 切换到正确的项目 backend 目录
+cd /usr/local/payplus/backend   
+# 2. 绝对路径激活上一级的虚拟环境
+source /usr/local/payplus/venv/bin/activate         
+# 3. 启动 Gunicorn
 exec gunicorn -w 4 -b 127.0.0.1:8000 app:app
 EOF
 chmod +x run.sh
