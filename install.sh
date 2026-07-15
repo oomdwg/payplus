@@ -7,9 +7,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 定义项目安装目录和 Git 地址
-INSTALL_DIR="/usr/local/my-flask-app"
-# ⚠️ 请把下面这行修改为你自己的 GitHub 仓库克隆地址！
-GIT_URL="https://github.com/oomdwg/payplus/blob/main.git"
+INSTALL_DIR="/usr/local/payplus"    # 👈 建议把安装目录名字也改成你的项目名
+GIT_URL="https://github.com/oomdwg/payplus.git" # 👈 只保留这一个正确的地址
 SERVICE_NAME="gptplus"
 
 echo "========================================="
