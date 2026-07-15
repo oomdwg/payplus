@@ -318,7 +318,7 @@ function openResult() {
   const url=document.getElementById('resultUrl').textContent;
   if (url) window.open(url,'_blank');
 }
-// ======= 👇 就是加在这里，直接贴在 </script> =======
+// ======= 👇 就是加在这里，直接贴在 =======
 window.addEventListener('load', () => {
   const savedUid = sessionStorage.getItem('uid');
   const savedToken = sessionStorage.getItem('token');
@@ -330,6 +330,7 @@ window.addEventListener('load', () => {
     document.getElementById('tokenInput').value = JSON.stringify(lastToken, null, 2);
     renderInfo(currentInfo);
     document.getElementById('loginCard').style.display = 'none';
+
     document.getElementById('infoSection').classList.add('show');
   }
 })
