@@ -43,9 +43,9 @@ fi
 # 4. 激活虚拟环境并安装 Python 依赖
 echo "🔄 正在安装 Python 依赖包..."
 source "$VENV_DIR"/bin/activate
-# 👉 使用虚拟环境内的 pip 路径，彻底绕过系统的全局写入限制
 ./"$VENV_DIR"/bin/pip install --upgrade pip -q
-./"$VENV_DIR"/bin/pip install gunicorn curl-cffi httpx
+# 👉 把运行所需的 flask 和 flask_cors 完整加进来
+./"$VENV_DIR"/bin/pip install flask flask-cors gunicorn curl-cffi httpx
 
 # 5. 写入一键启动脚本 (利用变量，动态写入当前实际的路径)
 cat > "$INSTALL_DIR/run.sh" << EOF
@@ -59,9 +59,8 @@ exec gunicorn -w 4 -b 127.0.0.1:8000 app:app
 EOF
 chmod +x "$INSTALL_DIR/run.sh"
 
-# 6. 将程序注册为 Systemd 系统服务 (实现后台运行、开机自启)
-echo "⚙️  正在将程序注册为系统服务..."
-cat > /etc/systemd/system/${SERVICE_NAME}.service << EOF
+# 6. 写入 systemd 服务配置
+cat > /etc/systemd/system/gptplus.service << EOF
 [Unit]
 Description=My Flask Application Service
 After=network.target
@@ -69,10 +68,10 @@ After=network.target
 [Service]
 Type=simple
 User=root
-# 👇 重点：将工作目录指定为你的代码所在目录 backend
+# 👉 动态指向当前实际的安装目录 backend
 WorkingDirectory=$INSTALL_DIR/backend
-# 👇 启动时依然运行根目录下的 run.sh 脚本
-ExecStart=$INSTALL_DIR/run.sh
+# 👉 动态指向当前实际的 run.sh 路径
+ExecStart=/bin/bash $INSTALL_DIR/run.sh
 Restart=always
 RestartSec=5
 
