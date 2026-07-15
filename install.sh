@@ -49,7 +49,7 @@ pip install gunicorn curl-cffi httpx
 # 5. 写入一键启动脚本 (方便后续手动管理)
 cat > run.sh << 'EOF'
 #!/bin/bash
-cd /usr/local/my-flask-app
+cd /usr/local/my-flask-app/backend
 source venv/bin/activate
 # ⚠️ 注意：下面的 app:app 请根据你的实际启动文件名修改（例如 main:app）
 exec gunicorn -w 4 -b 127.0.0.1:8000 app:app
@@ -66,7 +66,9 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$INSTALL_DIR
+# 👇 重点：将工作目录指定为你的代码所在目录 backend
+WorkingDirectory=$INSTALL_DIR/backend
+# 👇 启动时依然运行根目录下的 run.sh 脚本
 ExecStart=$INSTALL_DIR/run.sh
 Restart=always
 RestartSec=5
