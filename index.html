@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GPT 账户管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1a2340;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e8edf5;padding:16px 24px;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600}
+.header-icon{width:28px;height:28px;background:linear-gradient(135deg,#5b8dee,#3d6ff0);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.header-icon svg{color:#fff}
+.main{max-width:860px;margin:0 auto;padding:28px 16px 60px}
+.login-card{background:#fff;border-radius:14px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.login-title{font-size:16px;font-weight:600;margin-bottom:8px}
+.login-hint{font-size:13px;color:#7a8aaa;margin-bottom:16px;line-height:1.6}
+.login-hint a{color:#3d6ff0;text-decoration:none}
+.login-hint a:hover{text-decoration:underline}
+textarea{width:100%;min-height:140px;border:2px solid #dde3f0;border-radius:10px;padding:12px 14px;font-size:13px;font-family:monospace;color:#333;resize:vertical;outline:none;transition:border-color .2s;line-height:1.6}
+textarea:focus{border-color:#3d6ff0}
+textarea::placeholder{color:#b0bcd4}
+.btn-login{margin-top:14px;width:100%;background:linear-gradient(135deg,#5b8dee,#3d6ff0);color:#fff;border:none;border-radius:9px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .1s;box-shadow:0 4px 14px rgba(61,111,240,.3)}
+.btn-login:hover{opacity:.92;transform:translateY(-1px)}
+.btn-login:active{transform:translateY(0)}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.alert{border-radius:10px;padding:14px 16px;font-size:13.5px;margin-bottom:20px;display:none;gap:10px;align-items:flex-start}
+.alert.show{display:flex}
+.alert-warn{background:#fff8e6;border:1px solid #fcd88a;color:#7a5200}
+.alert-err{background:#fff3f3;border:1px solid #ffcccc;color:#cc3333}
+.alert-ok{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.info-section{display:none}
+.info-section.show{display:block}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:600px){.info-grid{grid-template-columns:1fr 1fr}}
+.info-card{background:#fff;border-radius:12px;padding:18px 16px;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.info-card-label{font-size:12px;color:#8899bb;margin-bottom:6px}
+.info-card-value{font-size:15px;font-weight:600;color:#1a2340}
+.info-card-value.orange{color:#f59e0b}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600}
+.badge-plus{background:#f59e0b;color:#fff}
+.badge-pro{background:#7c3aed;color:#fff}
+.badge-free{background:#6b7a99;color:#fff}
+.badge-team{background:#0ea5e9;color:#fff}
+.status-on{background:#dcfce7;color:#166534;border-radius:6px;padding:3px 10px;font-size:13px;font-weight:500}
+.status-off{background:#fee2e2;color:#991b1b;border-radius:6px;padding:3px 10px;font-size:13px;font-weight:500}
+.status-ok{background:#dcfce7;color:#166534;border-radius:6px;padding:3px 10px;font-size:13px;font-weight:500}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+.btn{border:none;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .18s,transform .1s}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-blue{background:#3d6ff0;color:#fff}
+.btn-green{background:#22c55e;color:#fff}
+.btn-orange{background:#f59e0b;color:#fff}
+.btn-gray{background:#e8edf5;color:#4a5568}
+.btn-logout{background:#f1f5f9;color:#6b7a99;margin-left:auto}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px;width:90%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:18px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:13px;color:#6b7a99;margin-bottom:6px;display:block}
+select{width:100%;border:1.5px solid #dde3f0;border-radius:8px;padding:10px 12px;font-size:14px;outline:none;background:#fff;color:#1a2340}
+select:focus{border-color:#3d6ff0}
+.modal-btns{display:flex;gap:10px;margin-top:20px}
+.modal-btns .btn{flex:1;justify-content:center}
+.result-box{display:none;margin-top:20px;background:#f7f9ff;border:1.5px solid #d0deff;border-radius:10px;padding:16px}
+.result-box.show{display:block}
+.result-label{font-size:12px;color:#8899bb;margin-bottom:8px}
+.result-url{font-size:12.5px;color:#1a2340;word-break:break-all;font-family:monospace;line-height:1.6}
+.result-btns{display:flex;gap:8px;margin-top:12px}
+.result-btns .btn{font-size:13px;padding:9px 16px}
+.spin{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.spin.show{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.top-bar{display:flex;align-items:center;margin-bottom:20px}
+.top-bar-title{font-size:16px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+  </div>
+  GPT 账户管理
+</div>
+
+<div class="main">
+  <div class="alert alert-warn" id="alertWarn"><span>⚠️</span><div id="alertWarnText"></div></div>
+  <div class="alert alert-err"  id="alertErr"><span>❌</span><div id="alertErrText"></div></div>
+  <div class="alert alert-ok"   id="alertOk"><span>✅</span><div id="alertOkText"></div></div>
+
+  <!-- Login -->
+  <div class="login-card" id="loginCard">
+    <div class="login-title">输入 Token 数据</div>
+    <div class="login-hint">
+      访问 <a href="https://chatgpt.com/api/auth/session" target="_blank">chatgpt.com/api/auth/session →</a>，复制页面中的 JSON 数据粘贴到下方
+    </div>
+    <textarea id="tokenInput" placeholder="请粘贴完整的 Session JSON 数据..."></textarea>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <div class="spin" id="loginSpin"></div>
+      <span id="loginBtnText">校验 Token 并登录</span>
+    </button>
+  </div>
+
+  <!-- Info -->
+  <div class="info-section" id="infoSection">
+    <div class="top-bar">
+      <div class="top-bar-title">账户信息</div>
+      <button class="btn btn-logout" onclick="doLogout()">退出登录</button>
+    </div>
+
+    <div class="alert alert-warn" id="expiredAlert" style="margin-bottom:20px">
+      <span>⚠️</span><div id="expiredAlertText"></div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card"><div class="info-card-label">✉️ 账户邮箱</div><div class="info-card-value" id="infoEmail">-</div></div>
+      <div class="info-card"><div class="info-card-label">🛡 当前套餐</div><div class="info-card-value" id="infoPlan">-</div></div>
+      <div class="info-card"><div class="info-card-label">📅 订阅开始</div><div class="info-card-value" id="infoStart">-</div></div>
+      <div class="info-card"><div class="info-card-label">⏱ 到期时间</div><div class="info-card-value orange" id="infoExpire">-</div></div>
+      <div class="info-card"><div class="info-card-label">🔄 计费周期</div><div class="info-card-value" id="infoCycle">-</div></div>
+      <div class="info-card"><div class="info-card-label">⚙️ 自动续费</div><div class="info-card-value" id="infoRenew">-</div></div>
+      <div class="info-card"><div class="info-card-label">💱 货币单位</div><div class="info-card-value" id="infoCurrency">-</div></div>
+      <div class="info-card"><div class="info-card-label">ℹ️ 账户状态</div><div class="info-card-value" id="infoStatus">-</div></div>
+      <div class="info-card"><div class="info-card-label">💳 支付渠道</div><div class="info-card-value" id="infoChannel">-</div></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-blue" onclick="openPayModal()">🔗 获取订阅支付链接</button>
+      <button class="btn btn-green" id="renewBtn" onclick="toggleRenew()">✅ 开启自动续费</button>
+      <button class="btn btn-orange" onclick="getBilling()">📄 获取账单链接</button>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-label" id="resultLabel">链接</div>
+      <div class="result-url" id="resultUrl"></div>
+      <div class="result-btns">
+        <button class="btn btn-blue" onclick="copyResult()">📋 复制链接</button>
+        <button class="btn btn-green" onclick="openResult()">🔗 打开链接</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-bg" id="payModal">
+  <div class="modal">
+    <div class="modal-title">选择订阅类型和支付国家</div>
+    <div class="form-group">
+      <label>订阅类型</label>
+      <select id="planSelect">
+        <option value="plus">ChatGPT Plus</option>
+        <option value="pro">ChatGPT Pro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>支付国家 / 货币</label>
+      <select id="countrySelect">
+       <option value="PH">菲律宾比索（菲律宾）</option>
+<option value="IN">印度卢比（印度）</option>
+<option value="TR">土耳其里拉（土耳其）</option>
+<option value="US">美元（美国）</option>
+<option value="GB">英镑（英国）</option>
+<option value="SG">新加坡元（新加坡）</option>
+<option value="JP">日元（日本）</option>
+<option value="KR">韩元（韩国）</option>
+<option value="HK">港币（香港）</option>
+<option value="TW">新台币（台湾）</option>
+<option value="AU">澳大利亚元（澳大利亚）</option>
+<option value="CA">加拿大元（加拿大）</option>
+<option value="DE">欧元（德国）</option>
+<option value="FR">欧元（法国）</option>
+<option value="BR">巴西雷亚尔（巴西）</option>
+<option value="MX">墨西哥比索（墨西哥）</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-blue" onclick="generateLink()" id="genBtn">
+        <div class="spin" id="genSpin"></div>
+        <span id="genBtnText">生成支付链接</span>
+      </button>
+      <button class="btn btn-gray" onclick="closePayModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let uid = null, currentInfo = null, lastToken = null;
+
+function api(path, body) {
+  return fetch(API + path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(r=>r.json());
+}
+
+function showAlert(type, msg) {
+  ['Warn','Err','Ok'].forEach(t => document.getElementById('alert'+t).classList.remove('show'));
+  if (!type) return;
+  document.getElementById('alert'+type+'Text').textContent = msg;
+  document.getElementById('alert'+type).classList.add('show');
+  setTimeout(() => document.getElementById('alert'+type).classList.remove('show'), 5000);
+}
+
+async function doLogin() {
+  const raw = document.getElementById('tokenInput').value.trim();
+  if (!raw) return showAlert('Err','请先粘贴 Session JSON 数据');
+  const btn=document.getElementById('loginBtn'), spin=document.getElementById('loginSpin'), txt=document.getElementById('loginBtnText');
+  btn.disabled=true; spin.classList.add('show'); txt.textContent='验证中…';
+  try {
+    let token; try { token=JSON.parse(raw); } catch { return showAlert('Err','JSON 格式错误，请重新复制'); }
+    lastToken = token;
+    const res = await api('/api/subscription/info', {token});
+    if (res.code !== 200) return showAlert('Err', res.message||'登录失败');
+    uid = res.uid; currentInfo = res.data;
+
+    // ======= 👇 第一处：登录成功，拿到数据后，在这里加保存逻辑 =======
+    sessionStorage.setItem('uid', uid);
+    sessionStorage.setItem('token', JSON.stringify(token));
+    sessionStorage.setItem('info', JSON.stringify(res.data));
+    // =========================================================
+
+    renderInfo(res.data);
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('infoSection').classList.add('show');
+  } catch(e) { showAlert('Err','网络错误: '+e.message); }
+  finally { btn.disabled=false; spin.classList.remove('show'); txt.textContent='校验 Token 并登录'; }
+}
+
+function renderInfo(d) {
+  document.getElementById('infoEmail').textContent = d.email||'-';
+  const pm={plus:'ChatGPT Plus',pro:'ChatGPT Pro',team:'ChatGPT Team',free:'ChatGPT Default'};
+  const pc={plus:'badge-plus',pro:'badge-pro',team:'badge-team',free:'badge-free'};
+  const pt=(d.account_type||'free').toLowerCase();
+  document.getElementById('infoPlan').innerHTML=`<span class="badge ${pc[pt]||'badge-free'}">${pm[pt]||d.account_type}</span>`;
+  document.getElementById('infoStart').textContent=d.start_time||'-';
+  document.getElementById('infoExpire').textContent=d.expire_time||'-';
+  const cm={monthly:'按月付费',yearly:'按年付费',annual:'按年付费'};
+  document.getElementById('infoCycle').textContent=cm[d.payment_cycle]||d.payment_cycle||'-';
+  document.getElementById('infoRenew').innerHTML=d.auto_renew?'<span class="status-on">✅ 已开启</span>':'<span class="status-off">❌ 已关闭</span>';
+  document.getElementById('infoCurrency').textContent=d.currency||'-';
+  document.getElementById('infoStatus').innerHTML=d.is_delinquent?'<span class="status-off">异常</span>':'<span class="status-ok">正常</span>';
+  const ch={1:'卡付',2:'支付宝',0:'未开通'};
+  document.getElementById('infoChannel').textContent=ch[d.payChannelType]||'未开通';
+  const renewBtn=document.getElementById('renewBtn');
+  renewBtn.textContent=d.auto_renew?'❌ 关闭自动续费':'✅ 开启自动续费';
+  renewBtn.className=d.auto_renew?'btn btn-gray':'btn btn-green';
+  const expEl=document.getElementById('expiredAlert');
+  if (pt==='free') {
+    document.getElementById('expiredAlertText').textContent='您的订阅已过期，当前为 ChatGPT Default（免费版）。可以点击下方"获取订阅支付链接"按钮重新订阅。';
+    expEl.classList.add('show');
+  } else { expEl.classList.remove('show'); }
+}
+
+function doLogout() {
+  // ======= 👇 第二处：一点击退出，立刻清空浏览器里的登录缓存 =======
+  sessionStorage.clear();
+  // ========================================================
+
+  if (uid) api('/api/logout',{uid});
+  uid=null; currentInfo=null; lastToken=null;
+  document.getElementById('tokenInput').value='';
+  document.getElementById('loginCard').style.display='block';
+  document.getElementById('infoSection').classList.remove('show');
+  document.getElementById('resultBox').classList.remove('show');
+}
+
+function openPayModal() { document.getElementById('payModal').classList.add('show'); }
+function closePayModal() { document.getElementById('payModal').classList.remove('show'); }
+
+async function generateLink() {
+  const country=document.getElementById('countrySelect').value;
+  const planType=document.getElementById('planSelect').value;
+  const btn=document.getElementById('genBtn'), spin=document.getElementById('genSpin'), txt=document.getElementById('genBtnText');
+  btn.disabled=true; spin.classList.add('show'); txt.textContent='生成中…';
+  try {
+    const res = await api('/api/payment/link', {token:lastToken, country, planType, isShortLink:1, linkType:'short'});
+    if (res.code!==200) return showAlert('Err', res.message||'生成失败');
+    closePayModal();
+    document.getElementById('resultLabel').textContent='支付链接（短链）';
+    document.getElementById('resultUrl').textContent=res.data?.payment_url||'';
+    document.getElementById('resultBox').classList.add('show');
+    showAlert('Ok','支付链接已生成');
+  } catch(e) { showAlert('Err','网络错误: '+e.message); }
+  finally { btn.disabled=false; spin.classList.remove('show'); txt.textContent='生成支付链接'; }
+}
+
+async function toggleRenew() {
+  if (!uid) return;
+  const newVal=!currentInfo?.auto_renew;
+  const btn=document.getElementById('renewBtn');
+  btn.disabled=true;
+  try {
+    const res=await api('/api/set_renew',{uid,will_renew:newVal});
+    if (res.code===200) { currentInfo.auto_renew=newVal; renderInfo(currentInfo); showAlert('Ok',res.message); }
+    else showAlert('Err',res.message||'操作失败');
+  } catch(e) { showAlert('Err','网络错误: '+e.message); }
+  finally { btn.disabled=false; }
+}
+
+async function getBilling() {
+  if (!uid) return;
+  try {
+    const res=await api('/api/get_billing',{uid});
+    if (res.code===200 && res.data?.url) {
+      document.getElementById('resultLabel').textContent='账单门户链接';
+      document.getElementById('resultUrl').textContent=res.data.url;
+      document.getElementById('resultBox').classList.add('show');
+      showAlert('Ok','账单链接已获取');
+    } else showAlert('Err',res.message||'获取失败');
+  } catch(e) { showAlert('Err','网络错误: '+e.message); }
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(document.getElementById('resultUrl').textContent).then(()=>showAlert('Ok','已复制到剪贴板'));
+}
+function openResult() {
+  const url=document.getElementById('resultUrl').textContent;
+  if (url) window.open(url,'_blank');
+}
+// ======= 👇 就是加在这里，直接贴在 </script> 的上方 =======
+window.addEventListener('load', () => {
+  const savedUid = sessionStorage.getItem('uid');
+  const savedToken = sessionStorage.getItem('token');
+  const savedInfo = sessionStorage.getItem('info');
+  if (savedUid && savedToken && savedInfo) {
+    uid = savedUid;
+    lastToken = JSON.parse(savedToken);
+    currentInfo = JSON.parse(savedInfo);
+    document.getElementById('tokenInput').value = JSON.stringify(lastToken, null, 2);
+    renderInfo(currentInfo);
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('infoSection').classList.add('show');
+  }
+});
+
+</script>
+</body>
+</html>
