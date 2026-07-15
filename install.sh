@@ -42,8 +42,9 @@ fi
 # 4. 激活虚拟环境并安装 Python 依赖
 echo "🔄 正在安装 Python 依赖包..."
 source "$VENV_DIR"/bin/activate
-pip install --upgrade pip -q
-pip install gunicorn curl-cffi httpx
+# 👉 使用虚拟环境内的 pip 路径，彻底绕过系统的全局写入限制
+./"$VENV_DIR"/bin/pip install --upgrade pip -q
+./"$VENV_DIR"/bin/pip install gunicorn curl-cffi httpx
 
 # 5. 写入一键启动脚本 (方便后续手动管理)
 cat > run.sh << 'EOF'
