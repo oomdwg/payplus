@@ -9,8 +9,8 @@ fi
 # 定义项目安装目录和 Git 地址
 INSTALL_DIR="/usr/local/my-flask-app"
 # ⚠️ 请把下面这行修改为你自己的 GitHub 仓库克隆地址！
-GIT_URL="https://github.com/你的用户名/你的仓库名.git"
-SERVICE_NAME="my-flask-app"
+GIT_URL="https://github.com/oomdwg/payplus/blob/main.git"
+SERVICE_NAME="gptplus"
 
 echo "========================================="
 echo "  🚀 开始一键部署 Python Web 应用..."
