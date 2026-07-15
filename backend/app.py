@@ -108,7 +108,8 @@ def get_subscription_info(access_token, session_token, token_data):
 
 @app.route('/')
 def index():
-    return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
+    # 增加一个 '..' 代表退回上一级目录（根目录）
+    return send_file(os.path.join(os.path.dirname(__file__), '..', 'index.html'))
 
 # ── 1. 登录 + 获取账户信息 ──
 @app.route('/api/subscription/info', methods=['POST'])
