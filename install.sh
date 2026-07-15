@@ -6,9 +6,10 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 定义项目安装目录和 Git 地址
-INSTALL_DIR="/usr/local/payplus"    # 👈 建议把安装目录名字也改成你的项目名
-GIT_URL="https://github.com/oomdwg/payplus.git" # 👈 只保留这一个正确的地址
+# 核心修改：动态获取当前脚本执行时所在的绝对路径
+INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+GIT_URL="https://github.com/oomdwg/payplus.git"
 SERVICE_NAME="gptplus"
 
 echo "========================================="
@@ -46,17 +47,17 @@ source "$VENV_DIR"/bin/activate
 ./"$VENV_DIR"/bin/pip install --upgrade pip -q
 ./"$VENV_DIR"/bin/pip install gunicorn curl-cffi httpx
 
-# 5. 写入一键启动脚本 (方便后续手动管理)
-cat > run.sh << 'EOF'
+# 5. 写入一键启动脚本 (利用变量，动态写入当前实际的路径)
+cat > "$INSTALL_DIR/run.sh" << EOF
 #!/bin/bash
-# 1. 切换到正确的项目 backend 目录
-cd /usr/local/payplus/backend   
-# 2. 绝对路径激活上一级的虚拟环境
-source /usr/local/payplus/venv/bin/activate         
+# 1. 切换到当前网站目录下的 backend
+cd "$INSTALL_DIR/backend"   
+# 2. 激活当前网站目录下的虚拟环境
+source "$INSTALL_DIR/venv/bin/activate"         
 # 3. 启动 Gunicorn
 exec gunicorn -w 4 -b 127.0.0.1:8000 app:app
 EOF
-chmod +x run.sh
+chmod +x "$INSTALL_DIR/run.sh"
 
 # 6. 将程序注册为 Systemd 系统服务 (实现后台运行、开机自启)
 echo "⚙️  正在将程序注册为系统服务..."
