@@ -299,16 +299,25 @@ async function toggleRenew() {
 }
 
 async function getBilling() {
-  if (!uid) return;
+  if (!uid) return showAlert('Err', '请先登录');
   try {
-    const res=await api('/api/get_billing',{uid});
-    if (res.code===200 && res.data?.url) {
-      document.getElementById('resultLabel').textContent='账单门户链接';
-      document.getElementById('resultUrl').textContent=res.data.url;
+    // 👇 在这里把 lastToken 传给后端，以便后端进行登录态校验
+    const res = await api('/api/get_billing', {
+      uid, 
+      token: lastToken 
+    });
+    
+    if (res.code === 200 && res.data?.url) {
+      document.getElementById('resultLabel').textContent = '账单门户链接';
+      document.getElementById('resultUrl').textContent = res.data.url;
       document.getElementById('resultBox').classList.add('show');
-      showAlert('Ok','账单链接已获取');
-    } else showAlert('Err',res.message||'获取失败');
-  } catch(e) { showAlert('Err','网络错误: '+e.message); }
+      showAlert('Ok', '账单链接已获取');
+    } else {
+      showAlert('Err', res.message || '获取失败');
+    }
+  } catch(e) { 
+    showAlert('Err', '网络错误: ' + e.message); 
+  }
 }
 
 function copyResult() {
@@ -318,7 +327,7 @@ function openResult() {
   const url=document.getElementById('resultUrl').textContent;
   if (url) window.open(url,'_blank');
 }
-// ======= 👇 就是加在这里，直接贴在 =======
+// ======= 👇 就是加在这里，直接贴在   =======
 window.addEventListener('load', () => {
   const savedUid = sessionStorage.getItem('uid');
   const savedToken = sessionStorage.getItem('token');
@@ -330,7 +339,6 @@ window.addEventListener('load', () => {
     document.getElementById('tokenInput').value = JSON.stringify(lastToken, null, 2);
     renderInfo(currentInfo);
     document.getElementById('loginCard').style.display = 'none';
-
     document.getElementById('infoSection').classList.add('show');
   }
 })
