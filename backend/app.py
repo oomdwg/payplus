@@ -76,11 +76,22 @@ def get_subscription_info(access_token, session_token, token_data):
     start_str = expire_str = '-'
 
     try:
+        # 1. 基础解析（将 OpenAI 的 ISO 格式 Z 标记替换为标准的 +00:00 时区标记）
         dt_expire = datetime.fromisoformat(raw_expire.replace('Z', '+00:00'))
+        
+        # 2. 转换为北京时间（UTC+2）解决时区差导致的2小时偏差
+        from datetime import timezone, timedelta
+        tz_beijing = timezone(timedelta(hours=2))
+        dt_expire = dt_expire.astimezone(tz_beijing)
+        
+        # 3. 格式化到期时间字符串
         expire_str = dt_expire.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 4. 计算上个月时间（以推算订阅开始时间）
         year, month = dt_expire.year, dt_expire.month
         new_month = month - 1 if month > 1 else 12
         new_year = year if month > 1 else year - 1
+        
         import calendar as cal
         day = min(dt_expire.day, cal.monthrange(new_year, new_month)[1])
         start_str = dt_expire.replace(year=new_year, month=new_month, day=day).strftime('%Y-%m-%d %H:%M:%S')
