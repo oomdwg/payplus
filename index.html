@@ -129,8 +129,10 @@ select:focus{border-color:#3d6ff0}
 
     <div class="actions">
       <button class="btn btn-blue" onclick="openPayModal()">🔗 获取订阅支付链接</button>
-      <button class="btn btn-green" id="renewBtn" onclick="toggleRenew()">✅ 开启自动续费</button>
+      <button class="btn btn-green" id="btnOpenRenew" onclick="toggleRenew(true)" style="display:none">✅ 开启自动续费</button>
+      <button class="btn btn-gray" id="btnCloseRenew" onclick="toggleRenew(false)" style="display:none">❌ 关闭自动续费</button>
       <button class="btn btn-orange" onclick="getBilling()">📄 获取账单链接</button>
+
     </div>
 
     <div class="result-box" id="resultBox">
@@ -242,10 +244,12 @@ function renderInfo(d) {
   document.getElementById('infoStatus').innerHTML=d.is_delinquent?'<span class="status-off">异常</span>':'<span class="status-ok">正常</span>';
   const ch={1:'卡付',2:'支付宝',0:'未开通'};
   document.getElementById('infoChannel').textContent=ch[d.payChannelType]||'未开通';
-  const renewBtn=document.getElementById('renewBtn');
-  renewBtn.textContent=d.auto_renew?'❌ 关闭自动续费':'✅ 开启自动续费';
-  renewBtn.className=d.auto_renew?'btn btn-gray':'btn btn-green';
-  const expEl=document.getElementById('expiredAlert');
+  
+  document.getElementById('btnOpenRenew').style.display = d.auto_renew ? 'none' : 'flex';
+  document.getElementById('btnCloseRenew').style.display = d.auto_renew ? 'flex' : 'none';
+  
+   const expEl=document.getElementById('expiredAlert');
+  
   if (pt==='free') {
     document.getElementById('expiredAlertText').textContent='您的订阅已过期，当前为 ChatGPT Default（免费版）。可以点击下方"获取订阅支付链接"按钮重新订阅。';
     expEl.classList.add('show');
@@ -285,17 +289,20 @@ async function generateLink() {
   finally { btn.disabled=false; spin.classList.remove('show'); txt.textContent='生成支付链接'; }
 }
 
-async function toggleRenew() {
-  if (!uid) return;
-  const newVal=!currentInfo?.auto_renew;
-  const btn=document.getElementById('renewBtn');
-  btn.disabled=true;
+async function toggleRenew(newVal) {
   try {
-    const res=await api('/api/set_renew',{uid,will_renew:newVal});
-    if (res.code===200) { currentInfo.auto_renew=newVal; renderInfo(currentInfo); showAlert('Ok',res.message); }
-    else showAlert('Err',res.message||'操作失败');
-  } catch(e) { showAlert('Err','网络错误: '+e.message); }
-  finally { btn.disabled=false; }
+    const res = await api('/api/set_renew', {token: lastToken, will_renew: newVal});
+    if (res.code === 200) {
+      currentInfo.auto_renew = newVal;
+      sessionStorage.setItem('info', JSON.stringify(currentInfo));
+      renderInfo(currentInfo);
+      showAlert('Ok', res.message);
+    } else {
+      showAlert('Err', res.message || '操作失败');
+    }
+  } catch(e) {
+    showAlert('Err', '网络错误: ' + e.message);
+  }
 }
 
 async function getBilling() {
