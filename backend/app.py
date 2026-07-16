@@ -209,6 +209,22 @@ def api_get_billing():
     try:
         body = request.json or {}
         uid = body.get('uid')
+        token_data = body.get('token')
+
+        # === 尝试在内存中恢复登录状态 ===
+        if uid and uid not in TOKEN_STORE and isinstance(token_data, dict):
+            try:
+                at_val = token_data.get('accessToken') or token_data.get('access_token')
+                st_val = token_data.get('sessionToken') or token_data.get('session_token')
+                
+                if at_val and st_val:
+                    TOKEN_STORE[uid] = {
+                        'access_token': at_val,
+                        'session_token': st_val
+                    }
+                    print(f"[自动重登] 成功恢复 uid: {uid} 到内存")
+            except Exception as e_restore:
+                print(f"[自动重登异常]: {e_restore}")
 
         if not uid or uid not in TOKEN_STORE:
             return jsonify({'code': 401, 'message': '未登录'})
@@ -216,21 +232,29 @@ def api_get_billing():
         at = TOKEN_STORE[uid]['access_token']
         st = TOKEN_STORE[uid]['session_token']
 
-        res = cf_requests.post(
+        # 👇 【核心修改】将 .post 改为 .get，去掉了 json 载荷，保持 headers 不变
+        res = cf_requests.get(
             'https://chatgpt.com/backend-api/payments/customer_portal',
             headers=make_headers(at, st),
-            timeout=20, impersonate='chrome116'
+            timeout=20, 
+            impersonate='chrome116'
         )
 
         if res.status_code == 200:
             return jsonify({'code': 200, 'message': '获取成功', 'data': {'url': res.json().get('url', '')}})
+        
+        # 针对 401/403/405 等常见失效状态码给予友好提示
+        if res.status_code in [401, 403, 405]:
+            return jsonify({'code': 401, 'message': f'获取失败: Token 已失效(状态码 {res.status_code})，请重新登录。'})
+            
         return jsonify({'code': res.status_code, 'message': f'获取失败: {res.text[:100]}'})
 
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({'code': 500, 'message': str(e)[:200]})
-
-
+        
+        
+        
 # ── 5. 登出 ──
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
