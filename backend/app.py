@@ -67,6 +67,7 @@ def get_subscription_info(access_token, session_token, token_data):
     account_obj = accounts.get(account_id) or (list(accounts.values())[0] if accounts else {})
 
     entitlement = account_obj.get('entitlement', {})
+    print(f"DEBUG_ENTITLEMENT: {json.dumps(entitlement)}")
     account_info = account_obj.get('account', {})
 
     is_active = entitlement.get('has_active_subscription', False)
@@ -76,11 +77,22 @@ def get_subscription_info(access_token, session_token, token_data):
     start_str = expire_str = '-'
 
     try:
+        # 1. 基础解析（将 OpenAI 的 ISO 格式 Z 标记替换为标准的 +00:00 时区标记）
         dt_expire = datetime.fromisoformat(raw_expire.replace('Z', '+00:00'))
+        
+        # 2. 转换为北京时间（UTC+2）解决时区差导致的2小时偏差
+        from datetime import timezone, timedelta
+        tz_beijing = timezone(timedelta(hours=2))
+        dt_expire = dt_expire.astimezone(tz_beijing)
+        
+        # 3. 格式化到期时间字符串
         expire_str = dt_expire.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 4. 计算上个月时间（以推算订阅开始时间）
         year, month = dt_expire.year, dt_expire.month
         new_month = month - 1 if month > 1 else 12
         new_year = year if month > 1 else year - 1
+        
         import calendar as cal
         day = min(dt_expire.day, cal.monthrange(new_year, new_month)[1])
         start_str = dt_expire.replace(year=new_year, month=new_month, day=day).strftime('%Y-%m-%d %H:%M:%S')
@@ -171,28 +183,36 @@ def api_payment_link():
 def api_set_renew():
     try:
         body = request.json or {}
-        uid = body.get('uid')
+        token_data = body.get('token', {})
+        if isinstance(token_data, str):
+            token_data = json.loads(token_data)
+
+        access_token = token_data.get('accessToken', '')
+        session_token = token_data.get('sessionToken', '')
         will_renew = body.get('will_renew', False)
 
-        if not uid or uid not in TOKEN_STORE:
-            return jsonify({'code': 401, 'message': '未登录'})
+        if not access_token:
+            return jsonify({'code': 401, 'message': '缺少Token'})
 
-        at = TOKEN_STORE[uid]['access_token']
-        st = TOKEN_STORE[uid]['session_token']
-        headers = make_headers(at, st, {'Content-Type': 'application/json'})
+        hj = make_headers(access_token, session_token, {'Content-Type': 'application/json'})
 
-        # 先试 PATCH，失败再试 POST
-        res = cf_requests.patch(
-            'https://chatgpt.com/backend-api/subscription',
-            headers=headers, json={'will_renew': will_renew},
-            timeout=20, impersonate='chrome116'
-        )
-        if res.status_code not in (200, 204):
-            res = cf_requests.post(
-                'https://chatgpt.com/backend-api/subscription/patch',
-                headers=headers, json={'will_renew': will_renew},
-                timeout=20, impersonate='chrome116'
-            )
+        # 开启续费用 renew 接口，关闭用 cancel 接口
+        if will_renew:
+            url = 'https://chatgpt.com/backend-api/subscriptions/renew'
+        else:
+            url = 'https://chatgpt.com/backend-api/subscriptions/cancel'
+
+        account_id = token_data.get('account', {}).get('id', '')
+
+        res = cf_requests.post(
+             url, 
+             headers=hj, 
+              json={'account_id': account_id}, 
+            timeout=20, 
+            impersonate='chrome116'
+                    )
+        res = cf_requests.post(url, headers=hj, json={'account_id': account_id}, timeout=20, impersonate='chrome116')
+        print(f"DEBUG_RENEW: status={res.status_code} body={res.text[:200]}")
 
         if res.status_code in (200, 204):
             return jsonify({'code': 200, 'message': f'已{"开启" if will_renew else "关闭"}自动续费'})
