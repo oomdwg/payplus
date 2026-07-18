@@ -52,7 +52,9 @@ textarea::placeholder{color:#b0bcd4}
 .btn-blue{background:#3d6ff0;color:#fff}
 .btn-green{background:#22c55e;color:#fff}
 .btn-orange{background:#f59e0b;color:#fff}
+ 
 .btn-gray{background:#e8edf5;color:#4a5568}
+.btn-red{background:#ef4444;color:#fff}   ← 加这行
 .btn-logout{background:#f1f5f9;color:#6b7a99;margin-left:auto}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
 .modal-bg.show{display:flex}
@@ -127,13 +129,13 @@ select:focus{border-color:#3d6ff0}
       <div class="info-card"><div class="info-card-label">💳 支付渠道</div><div class="info-card-value" id="infoChannel">-</div></div>
     </div>
 
-    <div class="actions">
-      <button class="btn btn-blue" onclick="openPayModal()">🔗 获取订阅支付链接</button>
-      <button class="btn btn-green" id="btnOpenRenew" onclick="toggleRenew(true)" style="display:none">✅ 开启自动续费</button>
-      <button class="btn btn-gray" id="btnCloseRenew" onclick="toggleRenew(false)" style="display:none">❌ 关闭自动续费</button>
-      <button class="btn btn-orange" onclick="getBilling()">📄 获取账单链接</button>
-
-    </div>
+   
+   <div class="actions">
+  <button class="btn btn-blue" onclick="openPayModal()">🔗 获取订阅支付链接</button>
+  <button class="btn btn-green" id="btnOpenRenew" onclick="toggleRenew(true)">✅ 开启自动续费订阅</button>
+  <button class="btn btn-red" id="btnCloseRenew" onclick="toggleRenew(false)">❌ 关闭自动续费订阅</button>
+  <button class="btn btn-orange" onclick="getBilling()">📄 获取账单链接</button>
+   </div>
 
     <div class="result-box" id="resultBox">
       <div class="result-label" id="resultLabel">链接</div>
@@ -242,11 +244,16 @@ function renderInfo(d) {
   document.getElementById('infoRenew').innerHTML=d.auto_renew?'<span class="status-on">✅ 已开启</span>':'<span class="status-off">❌ 已关闭</span>';
   document.getElementById('infoCurrency').textContent=d.currency||'-';
   document.getElementById('infoStatus').innerHTML=d.is_delinquent?'<span class="status-off">异常</span>':'<span class="status-ok">正常</span>';
-  const ch={1:'卡付',2:'支付宝',0:'未开通'};
+  const ch={0:'未开通', 1:'卡付', 2:'支付宝', 3:'iOS内购', 4:'Google Play'};
   document.getElementById('infoChannel').textContent=ch[d.payChannelType]||'未开通';
   
-  document.getElementById('btnOpenRenew').style.display = d.auto_renew ? 'none' : 'flex';
-  document.getElementById('btnCloseRenew').style.display = d.auto_renew ? 'flex' : 'none';
+  const isFree = pt === 'free';
+  const isRenewOn = d.auto_renew;
+  document.getElementById('btnOpenRenew').disabled = isFree || isRenewOn;
+  document.getElementById('btnOpenRenew').style.opacity = (isFree || isRenewOn) ? '0.4' : '1';
+  document.getElementById('btnCloseRenew').disabled = isFree || !isRenewOn;
+  document.getElementById('btnCloseRenew').style.opacity = (isFree || !isRenewOn) ? '0.4' : '1';
+
   
    const expEl=document.getElementById('expiredAlert');
   
@@ -335,7 +342,7 @@ function openResult() {
   if (url) window.open(url,'_blank');
 }
 // ======= 👇 就是加在这里，直接贴在   =======
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   const savedUid = sessionStorage.getItem('uid');
   const savedToken = sessionStorage.getItem('token');
   const savedInfo = sessionStorage.getItem('info');
@@ -343,12 +350,26 @@ window.addEventListener('load', () => {
     uid = savedUid;
     lastToken = JSON.parse(savedToken);
     currentInfo = JSON.parse(savedInfo);
-    document.getElementById('tokenInput').value = JSON.stringify(lastToken, null, 2);
+    // 先显示缓存数据
     renderInfo(currentInfo);
     document.getElementById('loginCard').style.display = 'none';
     document.getElementById('infoSection').classList.add('show');
+    
+    // 后台重新请求最新数据
+    try {
+      const res = await api('/api/subscription/info', {token: lastToken});
+      if (res.code === 200) {
+        uid = res.uid;
+        currentInfo = res.data;
+        sessionStorage.setItem('uid', uid);
+        sessionStorage.setItem('info', JSON.stringify(res.data));
+        renderInfo(res.data);
+      }
+    } catch(e) {
+      console.log('刷新数据失败', e);
+    }
   }
-})
+});
 
 </script>
 </body>
