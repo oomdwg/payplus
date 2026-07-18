@@ -75,6 +75,18 @@ def get_subscription_info(access_token, session_token, token_data):
 
     raw_expire = entitlement.get('expires_at', '')
     start_str = expire_str = '-'
+    
+    # 获取真实续费状态
+    sub_res = cf_requests.get(
+    f'https://chatgpt.com/backend-api/subscriptions?account_id={account_id}',
+    headers=make_headers(access_token, session_token),
+    timeout=20, impersonate='chrome116'
+    )
+    will_renew = False
+    if sub_res.status_code == 200:
+        will_renew = sub_res.json().get('will_renew', False)
+    
+    
 
     try:
         # 1. 基础解析（将 OpenAI 的 ISO 格式 Z 标记替换为标准的 +00:00 时区标记）
@@ -109,7 +121,7 @@ def get_subscription_info(access_token, session_token, token_data):
         'expire_time':   expire_str if is_active else '-',
         'currency':      entitlement.get('billing_currency', '-'),
         'payment_cycle': entitlement.get('billing_period', 'monthly'),
-        'auto_renew':    False,
+        'auto_renew': will_renew,
         'is_delinquent': entitlement.get('is_delinquent', False),
         'payChannelType': 1,
         'seats_used':    1,
