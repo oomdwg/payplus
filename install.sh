@@ -36,18 +36,16 @@ else
 fi
 
 # 3. 创建虚拟环境
-VENV_DIR="venv"
+VENV_DIR="$INSTALL_DIR/venv"
 if [ ! -d "$VENV_DIR" ]; then
-    echo "📦 正在创建 Python 虚拟环境..."
     python3 -m venv "$VENV_DIR"
 fi
 
 # 4. 激活虚拟环境并安装 Python 依赖
 echo "🔄 正在安装 Python 依赖包..."
-source "$VENV_DIR"/bin/activate
-./"$VENV_DIR"/bin/pip install --upgrade pip -q
-# 👉 把运行所需的 flask 和 flask_cors 完整加进来
-./"$VENV_DIR"/bin/pip install flask flask-cors gunicorn curl-cffi httpx
+source "$VENV_DIR/bin/activate"
+"$VENV_DIR/bin/pip" install --upgrade pip -q
+"$VENV_DIR/bin/pip" install flask flask-cors gunicorn curl-cffi httpx
 
 # 5. 写入一键启动脚本 (利用变量，动态写入当前实际的路径)
 cat > "$INSTALL_DIR/run.sh" << EOF
