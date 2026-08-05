@@ -1,29 +1,33 @@
 #!/bin/bash
 
-# 确保以 root 权限运行
+# 1. 确保以 root 权限运行
 if [ "$EUID" -ne 0 ]; then
     echo "❌ 错误: 请使用 root 用户或 sudo 运行此脚本！"
     exit 1
 fi
 
-# 核心修改：动态获取当前脚本执行时所在的绝对路径
-INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
-
+# ==================== 配置区 ====================
+# 👉 路径固定为 /opt/payplus（重启绝对不会丢失，卸载极度方便）
+INSTALL_DIR="/opt/payplus"
 GIT_URL="https://github.com/oomdwg/payplus.git"
 SERVICE_NAME="gptplus"
+# ================================================
 
 echo "========================================="
 echo "  🚀 开始一键部署 Python Web 应用..."
+echo "  📌 固定安装目录: ${INSTALL_DIR}"
 echo "========================================="
 
-# 1. 自动安装基础依赖环境
+# 2. 创建目标安装目录
+mkdir -p "$INSTALL_DIR"
+
+# 3. 自动安装基础系统依赖
 echo "📦 正在检查并安装基础系统依赖..."
 apt update -y
 apt install -y git python3 python3-pip python3.11-venv
 
-# 2. 克隆项目代码
+# 4. 克隆项目代码到固定路径 /opt/payplus
 echo "📥 正在克隆项目代码..."
-# 先克隆到临时目录，再强行覆盖过来，完美解决“目录非空”无法克隆的问题
 git clone --depth=1 "$GIT_URL" /tmp/payplus_temp
 if [ $? -eq 0 ]; then
     cp -r /tmp/payplus_temp/* "$INSTALL_DIR/" 2>/dev/null || true
@@ -35,32 +39,29 @@ else
     exit 1
 fi
 
-# 3. 创建虚拟环境
+# 5. 在 /opt/payplus 下创建 Python 虚拟环境
 VENV_DIR="$INSTALL_DIR/venv"
 if [ ! -d "$VENV_DIR" ]; then
     python3 -m venv "$VENV_DIR"
 fi
 
-# 4. 激活虚拟环境并安装 Python 依赖
+# 6. 安装 Python 依赖包
 echo "🔄 正在安装 Python 依赖包..."
 source "$VENV_DIR/bin/activate"
 "$VENV_DIR/bin/pip" install --upgrade pip -q
 "$VENV_DIR/bin/pip" install flask flask-cors gunicorn curl-cffi httpx
 
-# 5. 写入一键启动脚本 (利用变量，动态写入当前实际的路径)
+# 7. 写入启动脚本 /opt/payplus/run.sh
 cat > "$INSTALL_DIR/run.sh" << EOF
 #!/bin/bash
-# 1. 切换到当前网站目录下的 backend
 cd "$INSTALL_DIR/backend"   
-# 2. 激活当前网站目录下的虚拟环境
 source "$INSTALL_DIR/venv/bin/activate"         
-# 3. 启动 Gunicorn
 exec gunicorn -w 4 -b 127.0.0.1:8000 app:app
 EOF
 chmod +x "$INSTALL_DIR/run.sh"
 
-# 6. 写入 systemd 服务配置
-cat > /etc/systemd/system/gptplus.service << EOF
+# 8. 写入 systemd 服务配置（指向 /opt/payplus）
+cat > /etc/systemd/system/${SERVICE_NAME}.service << EOF
 [Unit]
 Description=My Flask Application Service
 After=network.target
@@ -68,9 +69,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-# 👉 动态指向当前实际的安装目录 backend
 WorkingDirectory=$INSTALL_DIR/backend
-# 👉 动态指向当前实际的 run.sh 路径
 ExecStart=/bin/bash $INSTALL_DIR/run.sh
 Restart=always
 RestartSec=5
@@ -79,7 +78,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-# 7. 启动服务并设置开机自启
+# 9. 启动服务并设置开机自启
 echo "🔄 正在启动后台服务..."
 systemctl daemon-reload
 systemctl enable ${SERVICE_NAME}
