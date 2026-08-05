@@ -188,11 +188,34 @@ def api_payment_link():
             })
 
         currency_map = {
-            'PH':'PHP',
-            'TH':'THB',
-            'US':'USD'
+            'PH': 'PHP',  # 菲律宾比索
+            'TW': 'TWD',
+            'TH': 'THB',
+            'JP': 'JPY',
+            'TH': 'THB', 
+             'VN': 'VND',
+             'NG': 'NGN',
+             'KZ': 'KZT',
+             'TZ': 'TZS',
+             'EG': 'EGP',
+            'KR': 'KRW',
+            'IN': 'INR',
+            'BR': 'BRL',
+            'MX': 'MXN',
+             
+            'US': 'USD',
+            'CA': 'CAD',
+            'GB': 'GBP',  # 英镑
+            'DE': 'EUR',  # 欧元（德国）
+            'FR': 'EUR',  # 欧元（法国）
+            'SG': 'SGD',  # 新加坡元
+            'AU': 'AUD',  # 澳大利亚元
+              # 加拿大元
+              
+ 
         }
-
+        country = str(body.get('country', 'PH')).strip().upper()
+         
         currency = currency_map.get(country, 'USD')
 
         actual_plan = (
