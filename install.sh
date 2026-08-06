@@ -82,11 +82,12 @@ fi
 
 # 8. 写入后台运行脚本 /opt/payplus/run.sh
 cat > "$INSTALL_DIR/run.sh" << EOF
+ 
 #!/bin/bash
-cd "$INSTALL_DIR/backend"   
-source "$INSTALL_DIR/venv/bin/activate"         
-exec gunicorn -w 4 -b 127.0.0.1:${PORT} app:app
+cd "$INSTALL_DIR/backend"
+exec "$INSTALL_DIR/venv/bin/gunicorn" -w 4 -b 127.0.0.1:${PORT} app:app
 EOF
+
 chmod +x "$INSTALL_DIR/run.sh"
 
 # 9. 写入 systemd 服务配置
