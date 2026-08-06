@@ -21,7 +21,7 @@ echo "========================================="
 # 2. 安装 net-tools/lsof 辅助端口检测
 echo "📦 正在检查并安装基础系统依赖..."
 apt update -y
-apt install -y git python3 python3-pip python3.11-venv lsof net-tools
+apt install -y git python3 python3-pip python3-venv lsof net-tools
 
 # 3. 智能检测 8000 端口
 PORT=$DEFAULT_PORT
