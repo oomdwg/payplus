@@ -63,17 +63,22 @@ else
     exit 1
 fi
 
-# 6. 在 /opt/payplus 下创建 Python 虚拟环境
-VENV_DIR="$INSTALL_DIR/venv"
-if [ ! -d "$VENV_DIR" ]; then
-    python3 -m venv "$VENV_DIR"
+# 6. 创建虚拟环境
+echo "📦 正在创建 Python 虚拟环境..."
+python3 -m venv "$INSTALL_DIR/venv"
+if [ $? -ne 0 ]; then
+    echo "❌ 虚拟环境创建失败！"
+    exit 1
 fi
 
-# 7. 安装 Python 依赖包
+# 7. 安装依赖
 echo "🔄 正在安装 Python 依赖包..."
-source "$VENV_DIR/bin/activate"
-"$VENV_DIR/bin/pip" install --upgrade pip -q
-"$VENV_DIR/bin/pip" install flask flask-cors gunicorn curl-cffi httpx
+"$INSTALL_DIR/venv/bin/pip" install --upgrade pip -q
+"$INSTALL_DIR/venv/bin/pip" install flask flask-cors gunicorn curl-cffi httpx
+if [ $? -ne 0 ]; then
+    echo "❌ 依赖安装失败！"
+    exit 1
+fi
 
 # 8. 写入后台运行脚本 /opt/payplus/run.sh
 cat > "$INSTALL_DIR/run.sh" << EOF
