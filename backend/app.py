@@ -170,39 +170,33 @@ def api_info():
 def api_payment_link():
     try:
         body = request.json or {}
-
         token_data = body.get('token', {})
         if isinstance(token_data, str):
             token_data = json.loads(token_data)
-
         access_token = token_data.get('accessToken', '')
         session_token = token_data.get('sessionToken', '')
-
-        country = body.get('country', 'PH')
         plan_type = body.get('planType', 'plus')
-
+        
         if not access_token:
             return jsonify({
-                'code':401,
-                'message':'缺少Token'
+                'code': 401,
+                'message': '缺少Token'
             })
-
+            
         currency_map = {
             'PH': 'PHP',  # 菲律宾比索
             'TW': 'TWD',
             'TH': 'THB',
             'JP': 'JPY',
-            'TH': 'THB', 
-             'VN': 'VND',
-             'NG': 'NGN',
-             'KZ': 'KZT',
-             'TZ': 'TZS',
-             'EG': 'EGP',
+            'VN': 'VND',
+            'NG': 'NGN',
+            'KZ': 'KZT',
+            'TZ': 'TZS',
+            'EG': 'EGP',
             'KR': 'KRW',
             'IN': 'INR',
             'BR': 'BRL',
             'MX': 'MXN',
-             
             'US': 'USD',
             'CA': 'CAD',
             'GB': 'GBP',  # 英镑
@@ -210,104 +204,93 @@ def api_payment_link():
             'FR': 'EUR',  # 欧元（法国）
             'SG': 'SGD',  # 新加坡元
             'AU': 'AUD',  # 澳大利亚元
-              # 加拿大元
-              
- 
         }
         country = str(body.get('country', 'PH')).strip().upper()
-         
         currency = currency_map.get(country, 'USD')
 
-        actual_plan = (
-            'chatgptpro'
-            if 'pro' in plan_type.lower()
-            else 'chatgptplusplan'
-        )
+        # 代理配置  # 如果不用代理，就注销掉这行
+        #COUNTRY_PROXY = {
+        #    'PH': 'http://y17454203802867-type-residential-country-ph-lifetime-30-session-YfIgLJm76Z:4c9e4f16c1b1c07fc50a1a9bd5c70c521968@sg-g.okkproxy.com:10000',
+        #}
+        #proxy = COUNTRY_PROXY.get(country)
 
+        # 判断套餐名称（已加入 GO 套餐）
+        plan_type_lower = plan_type.lower()
+        if 'pro' in plan_type_lower:
+            actual_plan = 'chatgptpro'
+        elif 'go' in plan_type_lower:
+            actual_plan = 'chatgptgoplan'
+        else:
+            actual_plan = 'chatgptplusplan'
 
         headers = make_headers(
             access_token,
             session_token,
             {
-                'Content-Type':'application/json',
-                'Accept':'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
         )
-
-
         payload = {
             'plan_name': actual_plan,
             'country': country,
             'currency': currency,
-            'checkout_ui_mode':'hosted',
+            'checkout_ui_mode': 'hosted',
             'billing_details': {
                 'country': country,
                 'currency': currency
             },
             'seat_count': 1
         }
-
-
         res = cf_requests.post(
             'https://chatgpt.com/backend-api/payments/checkout',
             headers=headers,
             json=payload,
             timeout=30,
-            impersonate='chrome116'
+            impersonate='chrome116',
+            # 如果不用代理，就注销掉这行
+            #proxies={'https': proxy, 'http': proxy} if proxy else None
         )
-
-
+        
         print("CHECKOUT STATUS:", res.status_code)
         print("CHECKOUT RESP:", res.text[:1000])
-
-
         if res.status_code != 200:
             return jsonify({
-                'code':res.status_code,
-                'message':res.text[:200]
+                'code': res.status_code,
+                'message': res.text[:200]
             })
-
-
         data = res.json()
-
-        sid = data.get('checkout_session_id','')
-
+        sid = data.get('checkout_session_id', '')
         if not sid:
             return jsonify({
-                'code':500,
-                'message':'没有checkout_session_id',
-                'raw':data
+                'code': 500,
+                'message': '没有checkout_session_id',
+                'raw': data
             })
-
-
         payment_url = (
             'https://chatgpt.com/checkout/openai_llc/'
             + sid
         )
-
-
         return jsonify({
-            'code':200,
-            'message':'支付链接生成成功',
-            'data':{
-                'payment_url':payment_url,
-                'checkout_session_id':sid,
-                'country':country,
-                'currency':currency,
+            'code': 200,
+            'message': '支付链接生成成功',
+            'data': {
+                'payment_url': payment_url,
+                'checkout_session_id': sid,
+                'country': country,
+                'currency': currency,
                 'requires_manual_approval':
-                    data.get('requires_manual_approval',False)
+                    data.get('requires_manual_approval', False)
             }
         })
-
-
     except Exception as e:
         import traceback
         traceback.print_exc()
-
         return jsonify({
-            'code':500,
-            'message':str(e)[:200]
+            'code': 500,
+            'message': str(e)[:200]
         })
+
 
 
 
